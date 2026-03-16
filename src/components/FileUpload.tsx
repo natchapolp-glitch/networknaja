@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { analyzeAudioFile, type AudioFeatures } from '../utils/audioAnalyzer'
 
 interface FileUploadProps {
   useCase: string
@@ -9,18 +10,20 @@ interface FileUploadProps {
 export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: FileUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [audioFeatures, setAudioFeatures] = useState<AudioFeatures | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const acceptMap: Record<string, string> = {
     wildlife: '.csv,.json',
     livestock: '.json',
-    companion: '.json,.wav',
+    companion: '.json,.wav,.mp3,.ogg,.m4a',
   }
 
   const labelMap: Record<string, string> = {
-    wildlife: 'CSV (การเคลื่อนไหว) หรือ JSON (สัญญาณชีวภาพ)',
+    wildlife: 'CSV (การเคลื่อนไหว) หรือ JSON',
     livestock: 'JSON (สัญญาณชีวภาพ)',
-    companion: 'JSON (เสียง/สัญญาณชีวภาพ) หรือ WAV',
+    companion: 'MP3 / WAV (เสียงจริง) หรือ JSON',
   }
 
   const sampleLabelMap: Record<string, string> = {
@@ -29,8 +32,53 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
     companion: 'Dog Bark Audio',
   }
 
-  const handleFile = (file: File) => {
+  const isAudioFile = (name: string) => {
+    const ext = name.toLowerCase()
+    return ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg') || ext.endsWith('.m4a')
+  }
+
+  const handleFile = async (file: File) => {
     setFileName(file.name)
+    setAudioFeatures(null)
+
+    // Real audio file → analyze with Web Audio API
+    if (isAudioFile(file.name)) {
+      setIsAnalyzing(true)
+      try {
+        const features = await analyzeAudioFile(file)
+        setAudioFeatures(features)
+        setIsAnalyzing(false)
+
+        // Convert features to data object for the analyzer
+        onFileLoaded(
+          {
+            energy: features.energy,
+            pitch: features.pitch,
+            duration: features.duration,
+            pattern: features.pattern,
+            peak_amplitude: features.peakAmplitude,
+            zero_crossing_rate: features.zeroCrossingRate,
+            spectral_centroid: features.spectralCentroid,
+            sample_rate: features.sampleRate,
+            source: 'real_audio',
+            file_name: file.name,
+          },
+          file.name,
+          'json'
+        )
+      } catch (err) {
+        setIsAnalyzing(false)
+        console.error('Audio analysis failed:', err)
+        onFileLoaded(
+          { error: 'ไม่สามารถวิเคราะห์ไฟล์เสียงได้', fileName: file.name },
+          file.name,
+          'unknown'
+        )
+      }
+      return
+    }
+
+    // JSON / CSV files → parse as before
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
@@ -52,11 +100,7 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
           })
           onFileLoaded({ rows, headers, total_points: rows.length }, file.name, 'csv')
         } else {
-          onFileLoaded({
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
-          }, file.name, 'wav')
+          onFileLoaded({ fileName: file.name, fileSize: file.size, fileType: file.type }, file.name, 'wav')
         }
       } catch {
         onFileLoaded({ error: 'ไม่สามารถอ่านไฟล์ได้', fileName: file.name }, file.name, 'unknown')
@@ -87,7 +131,7 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
-        onClick={() => fileRef.current?.click()}
+        onClick={() => !isAnalyzing && fileRef.current?.click()}
       >
         <input
           ref={fileRef}
@@ -96,7 +140,14 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
           accept={acceptMap[useCase] || '.json,.csv'}
           onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
         />
-        {fileName ? (
+
+        {isAnalyzing ? (
+          <div className="animate-fade-in py-2">
+            <div className="w-8 h-8 mx-auto mb-3 border-2 border-[#00ff88] border-t-transparent rounded-full animate-spin" />
+            <div className="text-sm text-[#00ff88] font-medium">Analyzing audio...</div>
+            <div className="text-xs text-slate-500 mt-1">Extracting features from {fileName}</div>
+          </div>
+        ) : fileName ? (
           <div className="animate-fade-in">
             <svg className="w-8 h-8 mx-auto mb-2 text-[#00ff88]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -119,11 +170,45 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
         )}
       </div>
 
+      {/* Audio features preview */}
+      {audioFeatures && (
+        <div className="mt-3 p-3 rounded-lg animate-fade-in" style={{ background: 'rgba(0, 255, 136, 0.05)' }}>
+          <div className="text-[10px] font-semibold text-[#00ff88] mb-2 uppercase tracking-wider">Extracted Audio Features</div>
+          <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Energy</span>
+              <span className="text-slate-300 font-mono">{audioFeatures.energy}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Pitch</span>
+              <span className="text-slate-300 font-mono">{audioFeatures.pitch} Hz</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Duration</span>
+              <span className="text-slate-300 font-mono">{audioFeatures.duration}s</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Pattern</span>
+              <span className="text-slate-300 font-mono">{audioFeatures.pattern}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Peak Amp</span>
+              <span className="text-slate-300 font-mono">{audioFeatures.peakAmplitude}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Spectral</span>
+              <span className="text-slate-300 font-mono">{audioFeatures.spectralCentroid} Hz</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 text-center">
         <span className="text-xs text-slate-600">— or —</span>
         <button
           onClick={() => {
             setFileName('sample-data')
+            setAudioFeatures(null)
             onSampleLoad()
           }}
           className="mt-2 w-full btn-secondary text-xs py-2 flex items-center justify-center gap-2"

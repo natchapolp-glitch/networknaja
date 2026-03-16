@@ -298,9 +298,9 @@ function analyzeRealAudio(data: Record<string, unknown>, useCase: string): Analy
 
   // Add use case context
   const useCaseContextMap: Record<string, string> = {
-    wildlife: 'สัตว์ป่า',
-    livestock: 'ปศุสัตว์',
-    companion: 'สัตว์เลี้ยง',
+    wildlife: 'สัตว์',
+    livestock: 'สัตว์',
+    companion: 'สัตว์',
   }
   const useCaseLabel = useCaseContextMap[useCase] || useCase
 

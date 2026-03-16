@@ -5,30 +5,36 @@ interface Props {
   useCase: string
 }
 
-const priorityColors: Record<string, { bg: string; text: string; label: string }> = {
-  CRITICAL: { bg: 'rgba(255, 51, 102, 0.15)', text: '#ff3366', label: '🔴 CRITICAL' },
-  HIGH: { bg: 'rgba(255, 107, 53, 0.15)', text: '#ff6b35', label: '🟠 HIGH' },
-  MEDIUM: { bg: 'rgba(255, 193, 7, 0.15)', text: '#ffc107', label: '🟡 MEDIUM' },
-  LOW: { bg: 'rgba(0, 255, 136, 0.15)', text: '#00ff88', label: '🟢 LOW' },
-  BACKGROUND: { bg: 'rgba(148, 163, 184, 0.1)', text: '#94a3b8', label: '⚪ BACKGROUND' },
+const priorityConfig: Record<string, { bg: string; text: string; label: string }> = {
+  CRITICAL: { bg: 'rgba(255, 51, 102, 0.15)', text: '#ff3366', label: 'CRITICAL' },
+  HIGH: { bg: 'rgba(255, 107, 53, 0.15)', text: '#ff6b35', label: 'HIGH' },
+  MEDIUM: { bg: 'rgba(255, 193, 7, 0.15)', text: '#ffc107', label: 'MEDIUM' },
+  LOW: { bg: 'rgba(0, 255, 136, 0.15)', text: '#00ff88', label: 'LOW' },
+  BACKGROUND: { bg: 'rgba(148, 163, 184, 0.1)', text: '#94a3b8', label: 'BACKGROUND' },
+}
+
+const useCaseLabels: Record<string, string> = {
+  wildlife: 'Wildlife',
+  livestock: 'Livestock',
+  companion: 'Companion',
 }
 
 export default function AnalysisResult({ result, useCase }: Props) {
-  const prio = priorityColors[result.priority] || priorityColors.LOW
-  const useCaseLabel = useCase === 'wildlife' ? '🦁 Wildlife' : useCase === 'livestock' ? '🐄 Livestock' : '🐕 Companion'
+  const prio = priorityConfig[result.priority] || priorityConfig.LOW
 
   return (
     <div className="glass-card animate-slide-up space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="text-xs text-slate-500 mb-1">{useCaseLabel} — Semantic Analysis</div>
+          <div className="text-xs text-slate-500 mb-1">{useCaseLabels[useCase]} — Semantic Analysis</div>
           <h3 className="text-xl font-bold gradient-text">{result.label}</h3>
         </div>
-        <span className="text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap"
+        <div className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap"
           style={{ background: prio.bg, color: prio.text }}>
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: prio.text }} />
           {prio.label}
-        </span>
+        </div>
       </div>
 
       {/* Meaning */}

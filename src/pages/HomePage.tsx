@@ -1,9 +1,26 @@
 import { Link } from 'react-router-dom'
 
+const UseCaseIcon = ({ id, color }: { id: string; color: string }) => {
+  if (id === 'wildlife') return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="10" r="6"/><path d="M6 4L4 2M18 4l2-2"/><path d="M12 16v4M8 20h8"/>
+    </svg>
+  )
+  if (id === 'livestock') return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="8" width="18" height="10" rx="2"/><path d="M7 8V6a2 2 0 012-2h6a2 2 0 012 2v2"/><line x1="12" y1="12" x2="12" y2="14"/>
+    </svg>
+  )
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 5.172C10 3.782 8.884 2.5 7.5 2.5c-1.384 0-2.5 1.282-2.5 2.672C5 8 7.5 10 7.5 10S10 8 10 5.172z"/><path d="M14 5.172C14 3.782 15.116 2.5 16.5 2.5c1.384 0 2.5 1.282 2.5 2.672C19 8 16.5 10 16.5 10S14 8 14 5.172z"/><path d="M12 10c-2 2-4 6-4 8a4 4 0 008 0c0-2-2-6-4-8z"/>
+    </svg>
+  )
+}
+
 const useCases = [
   {
     id: 'wildlife',
-    icon: '🦁',
     title: 'Wildlife Communication',
     desc: 'ตรวจจับสัญญาณเตือนภัย วิเคราะห์การอพยพ และติดตามสุขภาพสัตว์ป่า',
     color: '#00ff88',
@@ -11,7 +28,6 @@ const useCases = [
   },
   {
     id: 'livestock',
-    icon: '🐄',
     title: 'Smart Livestock',
     desc: 'ตรวจสอบสัญญาณชีวภาพ วิเคราะห์ความเครียด และจัดการฟาร์มอัจฉริยะ',
     color: '#00d4ff',
@@ -19,7 +35,6 @@ const useCases = [
   },
   {
     id: 'companion',
-    icon: '🐕',
     title: 'Companion Animal',
     desc: 'แปลภาษาสัตว์เลี้ยง วิเคราะห์อารมณ์ และดูแลสุขภาพเบื้องต้น',
     color: '#ff6b35',
@@ -88,11 +103,13 @@ export default function HomePage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up"
             style={{ animationDelay: '0.3s' }}>
-            <Link to="/simulator" className="btn-primary text-base px-8 py-4">
-              🚀 ลองใช้ Simulator
+            <Link to="/simulator" className="btn-primary text-base px-8 py-4 inline-flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              ลองใช้ Simulator
             </Link>
-            <Link to="/about" className="btn-secondary text-base px-8 py-4">
-              📖 เกี่ยวกับโปรเจกต์
+            <Link to="/about" className="btn-secondary text-base px-8 py-4 inline-flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              เกี่ยวกับโปรเจกต์
             </Link>
           </div>
 
@@ -157,7 +174,7 @@ export default function HomePage() {
                 className={`glass-card group animate-slide-up bg-gradient-to-br ${uc.bg} hover:scale-[1.02]`}
                 style={{ animationDelay: `${i * 0.12}s` }}
               >
-                <div className="text-4xl mb-4">{uc.icon}</div>
+                <div className="mb-4"><UseCaseIcon id={uc.id} color={uc.color} /></div>
                 <h3 className="text-lg font-bold mb-2" style={{ color: uc.color }}>
                   {uc.title}
                 </h3>

@@ -141,7 +141,10 @@ export default function SimulatorPage() {
 
             {error && (
               <div className="glass-card border-[#ff3366]/30 animate-fade-in">
-                <p className="text-sm text-[#ff3366]">❌ {error}</p>
+                <p className="text-sm text-[#ff3366] flex items-center gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  {error}
+                </p>
               </div>
             )}
 
@@ -151,11 +154,11 @@ export default function SimulatorPage() {
 
             {!result && !isProcessing && (
               <div className="glass-card text-center py-16">
-                <div className="text-4xl mb-4 opacity-30">
-                  {activeTab === 'wildlife' ? '🦁' : activeTab === 'livestock' ? '🐄' : '🐕'}
-                </div>
+                <svg className="w-12 h-12 mx-auto mb-4 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
                 <p className="text-sm text-slate-500">
-                  อัปโหลดข้อมูลหรือใช้ข้อมูลตัวอย่าง<br />เพื่อเริ่มการวิเคราะห์
+                  Upload data or use sample data<br />to start analysis
                 </p>
               </div>
             )}
@@ -207,8 +210,8 @@ function generateGenericResult(data: Record<string, unknown>, useCase: string): 
     label: hasHighValues ? 'Elevated Activity' : 'Normal Activity',
     confidence: hasHighValues ? 0.72 : 0.65,
     action: hasHighValues
-      ? '⚠️ ค่าบางตัวสูงกว่าปกติ ควรติดตามเพิ่มเติม'
-      : '✅ ค่าทั้งหมดอยู่ในเกณฑ์ปกติ ไม่ต้องดำเนินการ',
+      ? 'ค่าบางตัวสูงกว่าปกติ ควรติดตามเพิ่มเติม'
+      : 'ค่าทั้งหมดอยู่ในเกณฑ์ปกติ ไม่ต้องดำเนินการ',
     priority: hasHighValues ? 'MEDIUM' : 'LOW',
     rawFeatures: Object.fromEntries(
       Object.entries(data)

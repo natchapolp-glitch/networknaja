@@ -23,6 +23,12 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
     companion: 'JSON (เสียง/สัญญาณชีวภาพ) หรือ WAV',
   }
 
+  const sampleLabelMap: Record<string, string> = {
+    wildlife: 'Elephant Migration',
+    livestock: 'Cow Vital Signs',
+    companion: 'Dog Bark Audio',
+  }
+
   const handleFile = (file: File) => {
     setFileName(file.name)
     const reader = new FileReader()
@@ -46,7 +52,6 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
           })
           onFileLoaded({ rows, headers, total_points: rows.length }, file.name, 'csv')
         } else {
-          // For wav or other binary files, pass basic metadata
           onFileLoaded({
             fileName: file.name,
             fileSize: file.size,
@@ -71,10 +76,12 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
   return (
     <div className="glass-card">
       <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-        <span>📂</span> อัปโหลดข้อมูล
+        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        Upload Data
       </h3>
 
-      {/* Drop zone */}
       <div
         className={`upload-zone ${isDragOver ? 'drag-over' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
@@ -91,34 +98,40 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
         />
         {fileName ? (
           <div className="animate-fade-in">
-            <div className="text-2xl mb-2">✅</div>
+            <svg className="w-8 h-8 mx-auto mb-2 text-[#00ff88]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
             <div className="text-sm text-slate-300 font-medium">{fileName}</div>
-            <div className="text-xs text-slate-500 mt-1">คลิกเพื่อเปลี่ยนไฟล์</div>
+            <div className="text-xs text-slate-500 mt-1">Click to change file</div>
           </div>
         ) : (
           <>
-            <div className="text-3xl mb-3 opacity-50">📁</div>
+            <svg className="w-10 h-10 mx-auto mb-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
             <div className="text-sm text-slate-400 mb-1">
-              ลากไฟล์มาวางที่นี่ หรือ<span className="text-[#00ff88] font-medium">คลิกเพื่อเลือก</span>
+              Drag file here or <span className="text-[#00ff88] font-medium">browse</span>
             </div>
             <div className="text-xs text-slate-600">
-              รองรับ: {labelMap[useCase]}
+              Accepts: {labelMap[useCase]}
             </div>
           </>
         )}
       </div>
 
-      {/* Or use sample */}
       <div className="mt-4 text-center">
-        <span className="text-xs text-slate-600">— หรือ —</span>
+        <span className="text-xs text-slate-600">— or —</span>
         <button
           onClick={() => {
             setFileName('sample-data')
             onSampleLoad()
           }}
-          className="mt-2 w-full btn-secondary text-xs py-2"
+          className="mt-2 w-full btn-secondary text-xs py-2 flex items-center justify-center gap-2"
         >
-          ⚡ ใช้ข้อมูลตัวอย่าง ({useCase === 'wildlife' ? 'ช้างอพยพ' : useCase === 'livestock' ? 'สัญญาณชีพวัว' : 'เสียงสุนัข'})
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Use Sample Data ({sampleLabelMap[useCase]})
         </button>
       </div>
     </div>

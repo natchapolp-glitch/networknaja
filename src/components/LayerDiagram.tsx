@@ -1,34 +1,13 @@
 interface Props {
   activeLayer?: number
-  dataType?: string
 }
 
 const layerProcessing: Record<number, { input: string; output: string; process: string }> = {
-  4: {
-    input: 'Raw sensor data (binary)',
-    process: 'Signal acquisition → noise reduction',
-    output: 'Clean bio-signal stream',
-  },
-  3: {
-    input: 'Clean bio-signal stream',
-    process: 'Frame creation → checksum → sync',
-    output: 'Bio-Frame (structured)',
-  },
-  2: {
-    input: 'Bio-Frame',
-    process: 'Bio-Address resolution → Semantic routing',
-    output: 'Routed packet + priority',
-  },
-  1: {
-    input: 'Routed packet',
-    process: 'Priority queue → adaptive reliability',
-    output: 'Reliable delivery',
-  },
-  0: {
-    input: 'Delivered data',
-    process: 'Semantic interpretation → action mapping',
-    output: 'Meaningful insight + action',
-  },
+  4: { input: 'Raw sensor data (binary)', process: 'Signal acquisition → noise reduction', output: 'Clean bio-signal stream' },
+  3: { input: 'Clean bio-signal stream', process: 'Frame creation → checksum → sync', output: 'Bio-Frame (structured)' },
+  2: { input: 'Bio-Frame', process: 'Bio-Address resolution → Semantic routing', output: 'Routed packet + priority' },
+  1: { input: 'Routed packet', process: 'Priority queue → adaptive reliability', output: 'Reliable delivery' },
+  0: { input: 'Delivered data', process: 'Semantic interpretation → action mapping', output: 'Meaningful insight + action' },
 }
 
 export default function LayerDiagram({ activeLayer = -1 }: Props) {
@@ -37,7 +16,10 @@ export default function LayerDiagram({ activeLayer = -1 }: Props) {
   return (
     <div className="glass-card animate-slide-up">
       <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-        <span>📋</span> Layer Processing Detail
+        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        Layer Processing Detail
       </h3>
 
       {info ? (
@@ -67,8 +49,10 @@ export default function LayerDiagram({ activeLayer = -1 }: Props) {
         </div>
       ) : (
         <div className="text-center py-8 text-xs text-slate-600">
-          <span className="text-2xl block mb-2 opacity-40">⚡</span>
-          กดวิเคราะห์ข้อมูลเพื่อดูการทำงานแต่ละชั้น
+          <svg className="w-8 h-8 mx-auto mb-2 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Run analysis to see layer processing
         </div>
       )}
     </div>

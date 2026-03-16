@@ -70,7 +70,13 @@ export default function SimulatorPage() {
             return
           }
         } catch {
-          // Backend not available, use mock data
+          // Backend not available, use local analysis
+        }
+
+        // If real audio data, analyze from actual features
+        if (data.source === 'real_audio') {
+          setResult(analyzeRealAudio(data, activeTab))
+          return
         }
 
         // Fallback to mock results
@@ -78,7 +84,6 @@ export default function SimulatorPage() {
         if (mockKey && mockResults[mockKey]) {
           setResult(mockResults[mockKey])
         } else {
-          // Generate generic result from data
           setResult(generateGenericResult(data, activeTab))
         }
       }
@@ -220,5 +225,99 @@ function generateGenericResult(data: Record<string, unknown>, useCase: string): 
         .map(([k, v]) => [k, v as number | string])
     ),
     details: `วิเคราะห์จากข้อมูล ${Object.keys(data).length} features — ใช้ rule-based interpretation`,
+  }
+}
+
+function analyzeRealAudio(data: Record<string, unknown>, useCase: string): AnalysisOutput {
+  const energy = (data.energy as number) || 0
+  const pitch = (data.pitch as number) || 0
+  const duration = (data.duration as number) || 0
+  const pattern = (data.pattern as string) || 'unknown'
+  const spectralCentroid = (data.spectral_centroid as number) || 0
+  const peakAmplitude = (data.peak_amplitude as number) || 0
+
+  // Determine emotional state based on audio features
+  let label = ''
+  let meaning = ''
+  let action = ''
+  let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'BACKGROUND' = 'LOW'
+  let confidence = 0.65
+
+  // High energy + high pitch = distress or excitement
+  // Low energy + low pitch = calm or sleep
+  // Repeated pattern = calling / alert
+  // Sustained = distress or territorial
+
+  if (energy > 0.7 && pitch > 1500 && pattern === 'repeated_short') {
+    label = 'Alert / Distress Call'
+    meaning = `ตรวจพบเสียงร้องแบบซ้ำ ๆ พลังงานสูง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz — บ่งบอกถึงสัญญาณเตือนภัยหรือขอความช่วยเหลือ`
+    action = 'ควรตรวจสอบสภาพแวดล้อมของสัตว์ทันที อาจมีอันตรายหรือความเครียด'
+    priority = 'HIGH'
+    confidence = 0.82
+  } else if (energy > 0.7 && pitch > 1000 && (pattern === 'varied' || pattern === 'sustained')) {
+    label = 'Excited / Active Communication'
+    meaning = `เสียงพลังงานสูง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz รูปแบบ ${pattern} — สัตว์กำลังสื่อสารอย่างกระตือรือร้น อาจเป็นการเรียก ตอบสนอง หรือแสดงอาณาเขต`
+    action = 'เสียงแสดงความกระตือรือร้น ติดตามพฤติกรรมต่อเพื่อประเมินว่าเป็นปกติหรือไม่'
+    priority = 'MEDIUM'
+    confidence = 0.78
+  } else if (energy > 0.5 && pitch > 800 && pattern === 'repeated_short') {
+    label = 'Routine Vocalization'
+    meaning = `เสียงร้องปกติ พลังงาน ${energy.toFixed(2)} ความถี่ ${pitch} Hz — เป็นการสื่อสารทั่วไปในชีวิตประจำวัน เช่น เรียกหาอาหาร เรียกฝูง`
+    action = 'อยู่ในเกณฑ์ปกติ ไม่ต้องดำเนินการใด ๆ'
+    priority = 'LOW'
+    confidence = 0.75
+  } else if (energy > 0.6 && pattern === 'single_burst') {
+    label = 'Startle / Warning'
+    meaning = `เสียงสั้นพลังงานสูง (${energy.toFixed(2)}) — อาจเป็นปฏิกิริยาตกใจ หรือเสียงเตือนเบื้องต้น`
+    action = 'ตรวจสอบสาเหตุที่ทำให้ตกใจ อาจมีสิ่งรบกวนในสภาพแวดล้อม'
+    priority = 'MEDIUM'
+    confidence = 0.70
+  } else if (energy < 0.3 && pattern === 'sustained') {
+    label = 'Resting / Content'
+    meaning = `เสียงเบาต่อเนื่อง พลังงาน ${energy.toFixed(2)} — สัตว์อยู่ในสภาวะสงบ พักผ่อน หรือพึงพอใจ`
+    action = 'สัตว์อยู่ในสภาพดี ไม่ต้องดำเนินการ'
+    priority = 'BACKGROUND'
+    confidence = 0.72
+  } else if (energy > 0.5) {
+    label = 'Active Vocalization'
+    meaning = `ตรวจพบเสียงร้องพลังงาน ${energy.toFixed(2)} ความถี่หลัก ${pitch} Hz ระยะเวลา ${duration.toFixed(1)}s — สัตว์กำลังสื่อสารหรือตอบสนองต่อสิ่งเร้า`
+    action = 'ติดตามเพิ่มเติม ดูว่าเป็นรูปแบบพฤติกรรมปกติหรือไม่'
+    priority = 'LOW'
+    confidence = 0.68
+  } else {
+    label = 'Low Activity / Background'
+    meaning = `เสียงพลังงานต่ำ (${energy.toFixed(2)}) — อาจเป็นเสียงพื้นหลัง หรือสัตว์อยู่ในช่วงพักผ่อน`
+    action = 'ไม่มีสัญญาณผิดปกติ'
+    priority = 'BACKGROUND'
+    confidence = 0.60
+  }
+
+  // Adjust confidence based on spectral centroid clarity
+  if (spectralCentroid > 3000) confidence = Math.min(confidence + 0.05, 0.95)
+  if (peakAmplitude > 0.9) confidence = Math.min(confidence + 0.03, 0.95)
+
+  // Add use case context
+  const useCaseContextMap: Record<string, string> = {
+    wildlife: 'สัตว์ป่า',
+    livestock: 'ปศุสัตว์',
+    companion: 'สัตว์เลี้ยง',
+  }
+  const useCaseLabel = useCaseContextMap[useCase] || useCase
+
+  return {
+    meaning: `[${useCaseLabel}] ${meaning}`,
+    label,
+    confidence,
+    action,
+    priority,
+    rawFeatures: {
+      avg_energy: energy,
+      pitch_hz: pitch,
+      duration_sec: duration,
+      sound_pattern: pattern,
+      spectral_centroid: spectralCentroid,
+      peak_amplitude: peakAmplitude,
+    },
+    details: `วิเคราะห์จากไฟล์เสียงจริง "${data.file_name}" — ดึง features ด้วย Web Audio API แล้วตีความด้วย rule-based semantic interpreter`,
   }
 }

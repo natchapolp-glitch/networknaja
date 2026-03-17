@@ -8,6 +8,8 @@ import NetworkTopology from '../components/NetworkTopology'
 import LayerDiagram from '../components/LayerDiagram'
 import ConfidenceChart from '../components/ConfidenceChart'
 import { sampleData, mockResults, type AnalysisOutput } from '../data/mockResponses'
+import { analyzeMovementData } from '../utils/movementAnalyzer'
+import { analyzeBiosignalData, isBiosignalData } from '../utils/biosignalAnalyzer'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -79,6 +81,18 @@ export default function SimulatorPage() {
           return
         }
 
+        // If movement data (CSV), analyze with movement analyzer
+        if (fileType === 'csv' || data.rows || data.path) {
+          setResult(analyzeMovementData(data as Record<string, unknown>))
+          return
+        }
+
+        // If biosignal data (JSON with vital signs), analyze with biosignal analyzer
+        if (isBiosignalData(data)) {
+          setResult(analyzeBiosignalData(data as Record<string, unknown>, activeTab))
+          return
+        }
+
         // Fallback to mock results
         const mockKey = getMockKey(activeTab, fileType)
         if (mockKey && mockResults[mockKey]) {
@@ -96,9 +110,16 @@ export default function SimulatorPage() {
     const sampleKey = getSampleKey(activeTab)
     const sample = sampleData[sampleKey]
     if (sample) {
-      const mockKey = sampleKey
       simulateLayerProcessing(() => {
-        setResult(mockResults[mockKey] || generateGenericResult(sample.data, activeTab))
+        // Use real analyzers for sample data too
+        if (sample.type === 'movement') {
+          setResult(analyzeMovementData(sample.data as Record<string, unknown>))
+        } else if (sample.type === 'biosignal') {
+          setResult(analyzeBiosignalData(sample.data as Record<string, unknown>, activeTab))
+        } else {
+          // Sound / other — use mock
+          setResult(mockResults[sampleKey] || generateGenericResult(sample.data, activeTab))
+        }
       })
     }
   }

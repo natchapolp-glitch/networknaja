@@ -15,14 +15,14 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
   const fileRef = useRef<HTMLInputElement>(null)
 
   const acceptMap: Record<string, string> = {
-    wildlife: '.csv,.json',
-    livestock: '.json',
+    wildlife: '.csv,.json,.wav,.mp3,.ogg,.m4a',
+    livestock: '.json,.wav,.mp3,.ogg,.m4a',
     companion: '.json,.wav,.mp3,.ogg,.m4a',
   }
 
   const labelMap: Record<string, string> = {
-    wildlife: 'CSV (การเคลื่อนไหว) หรือ JSON',
-    livestock: 'JSON (สัญญาณชีวภาพ)',
+    wildlife: 'CSV / JSON / MP3 / WAV (เสียงสัตว์ป่า)',
+    livestock: 'JSON / MP3 / WAV (เสียงหรือสัญญาณชีวภาพ)',
     companion: 'MP3 / WAV (เสียงจริง) หรือ JSON',
   }
 

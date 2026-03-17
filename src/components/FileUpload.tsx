@@ -15,15 +15,15 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
   const fileRef = useRef<HTMLInputElement>(null)
 
   const acceptMap: Record<string, string> = {
-    wildlife: '.csv,.json,.wav,.mp3,.ogg,.m4a',
-    livestock: '.json,.wav,.mp3,.ogg,.m4a',
-    companion: '.json,.wav,.mp3,.ogg,.m4a',
+    wildlife: '.csv,.json,.mp3',
+    livestock: '.json,.mp3',
+    companion: '.json,.mp3',
   }
 
   const labelMap: Record<string, string> = {
-    wildlife: 'CSV / JSON / MP3 / WAV (เสียงสัตว์ป่า)',
-    livestock: 'JSON / MP3 / WAV (เสียงหรือสัญญาณชีวภาพ)',
-    companion: 'MP3 / WAV (เสียงจริง) หรือ JSON',
+    wildlife: 'CSV / JSON / MP3 (เสียงสัตว์ป่า)',
+    livestock: 'JSON / MP3 (เสียงหรือสัญญาณชีวภาพ)',
+    companion: 'MP3 (เสียงจริง) หรือ JSON',
   }
 
   const sampleLabelMap: Record<string, string> = {
@@ -33,8 +33,7 @@ export default function FileUpload({ useCase, onFileLoaded, onSampleLoad }: File
   }
 
   const isAudioFile = (name: string) => {
-    const ext = name.toLowerCase()
-    return ext.endsWith('.mp3') || ext.endsWith('.wav') || ext.endsWith('.ogg') || ext.endsWith('.m4a')
+    return name.toLowerCase().endsWith('.mp3')
   }
 
   const handleFile = async (file: File) => {

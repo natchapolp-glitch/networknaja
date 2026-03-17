@@ -257,76 +257,226 @@ function analyzeRealAudio(data: Record<string, unknown>, useCase: string): Analy
   const spectralCentroid = (data.spectral_centroid as number) || 0
   const peakAmplitude = (data.peak_amplitude as number) || 0
 
-  // Determine emotional state based on audio features
-  let label = ''
-  let meaning = ''
-  let action = ''
-  let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'BACKGROUND' = 'LOW'
+  // Branch to use-case-specific interpreter
+  if (useCase === 'wildlife') {
+    return analyzeWildlifeAudio(energy, pitch, duration, pattern, spectralCentroid, peakAmplitude, data)
+  } else if (useCase === 'livestock') {
+    return analyzeLivestockAudio(energy, pitch, duration, pattern, spectralCentroid, peakAmplitude, data)
+  } else {
+    return analyzeCompanionAudio(energy, pitch, duration, pattern, spectralCentroid, peakAmplitude, data)
+  }
+}
+
+// ========= Wildlife: เน้น alert / territorial / migration / environmental threat =========
+function analyzeWildlifeAudio(
+  energy: number, pitch: number, duration: number, pattern: string,
+  spectralCentroid: number, peakAmplitude: number, data: Record<string, unknown>
+): AnalysisOutput {
+  let label = '', meaning = '', action = ''
+  let priority: AnalysisOutput['priority'] = 'LOW'
   let confidence = 0.65
 
-  // High energy + high pitch = distress or excitement
-  // Low energy + low pitch = calm or sleep
-  // Repeated pattern = calling / alert
-  // Sustained = distress or territorial
-
   if (energy > 0.7 && pitch > 1500 && pattern === 'repeated_short') {
-    label = 'Alert / Distress Call'
-    meaning = `ตรวจพบเสียงร้องแบบซ้ำ ๆ พลังงานสูง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz — บ่งบอกถึงสัญญาณเตือนภัยหรือขอความช่วยเหลือ`
-    action = 'ควรตรวจสอบสภาพแวดล้อมของสัตว์ทันที อาจมีอันตรายหรือความเครียด'
+    label = 'Alarm Call / Predator Alert'
+    meaning = `ตรวจพบเสียงเตือนภัยซ้ำ ๆ พลังงานสูง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz — สัตว์กำลังส่งสัญญาณเตือนฝูงว่ามีภัยคุกคาม`
+    action = '🚨 แจ้งเจ้าหน้าที่พิทักษ์ป่าทันที ตรวจสอบว่ามีผู้ลักลอบล่าสัตว์หรือผู้บุกรุกหรือไม่'
+    priority = 'CRITICAL'
+    confidence = 0.85
+  } else if (energy > 0.7 && pitch > 1000 && pattern === 'sustained') {
+    label = 'Territorial Defense'
+    meaning = `เสียงร้องต่อเนื่องพลังงานสูง (${energy.toFixed(2)}) — สัตว์กำลังประกาศ/ปกป้องอาณาเขต อาจมีสัตว์อื่นบุกรุก`
+    action = '🗺️ ตรวจสอบขอบเขตอาณาเขต เฝ้าระวังความขัดแย้งระหว่างสัตว์'
     priority = 'HIGH'
-    confidence = 0.82
-  } else if (energy > 0.7 && pitch > 1000 && (pattern === 'varied' || pattern === 'sustained')) {
-    label = 'Excited / Active Communication'
-    meaning = `เสียงพลังงานสูง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz รูปแบบ ${pattern} — สัตว์กำลังสื่อสารอย่างกระตือรือร้น อาจเป็นการเรียก ตอบสนอง หรือแสดงอาณาเขต`
-    action = 'เสียงแสดงความกระตือรือร้น ติดตามพฤติกรรมต่อเพื่อประเมินว่าเป็นปกติหรือไม่'
-    priority = 'MEDIUM'
-    confidence = 0.78
+    confidence = 0.80
   } else if (energy > 0.5 && pitch > 800 && pattern === 'repeated_short') {
-    label = 'Routine Vocalization'
-    meaning = `เสียงร้องปกติ พลังงาน ${energy.toFixed(2)} ความถี่ ${pitch} Hz — เป็นการสื่อสารทั่วไปในชีวิตประจำวัน เช่น เรียกหาอาหาร เรียกฝูง`
-    action = 'อยู่ในเกณฑ์ปกติ ไม่ต้องดำเนินการใด ๆ'
-    priority = 'LOW'
+    label = 'Group Coordination Call'
+    meaning = `เสียงร้องซ้ำ ๆ ระดับปานกลาง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz — สัตว์กำลังประสานงานกับฝูง อาจเป็นสัญญาณนำทางหรือเรียกรวมกลุ่ม`
+    action = '📡 บันทึกพิกัดและทิศทาง อาจเป็นสัญญาณเริ่มต้นการอพยพ'
+    priority = 'MEDIUM'
     confidence = 0.75
+  } else if (energy > 0.5 && pattern === 'varied') {
+    label = 'Mating / Social Call'
+    meaning = `เสียงร้องหลากหลายรูปแบบ พลังงาน ${energy.toFixed(2)} — อาจเป็นพฤติกรรมในฤดูผสมพันธุ์หรือการสื่อสารทางสังคม`
+    action = '🌿 พฤติกรรมปกติตามฤดูกาล ติดตามช่วงเวลาเพื่อยืนยัน'
+    priority = 'LOW'
+    confidence = 0.72
   } else if (energy > 0.6 && pattern === 'single_burst') {
-    label = 'Startle / Warning'
-    meaning = `เสียงสั้นพลังงานสูง (${energy.toFixed(2)}) — อาจเป็นปฏิกิริยาตกใจ หรือเสียงเตือนเบื้องต้น`
-    action = 'ตรวจสอบสาเหตุที่ทำให้ตกใจ อาจมีสิ่งรบกวนในสภาพแวดล้อม'
+    label = 'Startle Response'
+    meaning = `เสียงสั้นพลังงานสูง (${energy.toFixed(2)}) — ปฏิกิริยาตกใจจากภัยคุกคามเฉียบพลัน`
+    action = '⚠️ ตรวจสอบสภาพแวดล้อมรอบจุดตรวจจับ อาจมีการรบกวนจากมนุษย์'
     priority = 'MEDIUM'
     confidence = 0.70
   } else if (energy < 0.3 && pattern === 'sustained') {
-    label = 'Resting / Content'
-    meaning = `เสียงเบาต่อเนื่อง พลังงาน ${energy.toFixed(2)} — สัตว์อยู่ในสภาวะสงบ พักผ่อน หรือพึงพอใจ`
-    action = 'สัตว์อยู่ในสภาพดี ไม่ต้องดำเนินการ'
+    label = 'Ambient / Resting'
+    meaning = `เสียงเบาต่อเนื่อง (${energy.toFixed(2)}) — สัตว์อาจอยู่ในช่วงพักผ่อนหรือเป็นเสียงสภาพแวดล้อม`
+    action = '😴 ไม่มีภัยคุกคาม สัตว์อยู่ในสภาวะสงบ'
     priority = 'BACKGROUND'
-    confidence = 0.72
-  } else if (energy > 0.5) {
-    label = 'Active Vocalization'
-    meaning = `ตรวจพบเสียงร้องพลังงาน ${energy.toFixed(2)} ความถี่หลัก ${pitch} Hz ระยะเวลา ${duration.toFixed(1)}s — สัตว์กำลังสื่อสารหรือตอบสนองต่อสิ่งเร้า`
-    action = 'ติดตามเพิ่มเติม ดูว่าเป็นรูปแบบพฤติกรรมปกติหรือไม่'
-    priority = 'LOW'
     confidence = 0.68
+  } else if (energy > 0.5) {
+    label = 'Unclassified Vocalization'
+    meaning = `ตรวจพบเสียงร้องพลังงาน ${energy.toFixed(2)} ความถี่ ${pitch} Hz — ยังไม่สามารถจำแนกพฤติกรรมได้ชัดเจน`
+    action = '📊 บันทึกข้อมูลเพื่อเทียบกับฐานข้อมูลเสียงสัตว์ป่า'
+    priority = 'LOW'
+    confidence = 0.60
   } else {
-    label = 'Low Activity / Background'
-    meaning = `เสียงพลังงานต่ำ (${energy.toFixed(2)}) — อาจเป็นเสียงพื้นหลัง หรือสัตว์อยู่ในช่วงพักผ่อน`
+    label = 'Low Activity / Background Noise'
+    meaning = `เสียงพลังงานต่ำ (${energy.toFixed(2)}) — เป็นเสียงพื้นหลังของป่า ไม่มีสัญญาณจากสัตว์`
+    action = 'ไม่มีสัญญาณผิดปกติ'
+    priority = 'BACKGROUND'
+    confidence = 0.55
+  }
+
+  if (spectralCentroid > 3000) confidence = Math.min(confidence + 0.05, 0.95)
+  if (peakAmplitude > 0.9) confidence = Math.min(confidence + 0.03, 0.95)
+
+  return buildAudioResult('[สัตว์]', label, meaning, action, priority, confidence, energy, pitch, duration, pattern, spectralCentroid, peakAmplitude, data)
+}
+
+// ========= Livestock: เน้น health / heat stress / pain / feeding behavior =========
+function analyzeLivestockAudio(
+  energy: number, pitch: number, duration: number, pattern: string,
+  spectralCentroid: number, peakAmplitude: number, data: Record<string, unknown>
+): AnalysisOutput {
+  let label = '', meaning = '', action = ''
+  let priority: AnalysisOutput['priority'] = 'LOW'
+  let confidence = 0.65
+
+  if (energy > 0.7 && pitch > 1500 && pattern === 'repeated_short') {
+    label = 'Pain / Distress Vocalization'
+    meaning = `เสียงร้องซ้ำ ๆ ความถี่สูง ${pitch} Hz พลังงานสูง (${energy.toFixed(2)}) — สัตว์อาจเจ็บปวด บาดเจ็บ หรือมีปัญหาสุขภาพเฉียบพลัน`
+    action = '🩺 ตรวจสอบสัตว์โดยสัตวแพทย์ทันที อาจมีอาการบาดเจ็บหรือโรค'
+    priority = 'CRITICAL'
+    confidence = 0.85
+  } else if (energy > 0.7 && pitch > 1000 && pattern === 'sustained') {
+    label = 'Heat Stress Vocalization'
+    meaning = `เสียงร้องต่อเนื่องพลังงานสูง (${energy.toFixed(2)}) — สัตว์อาจมีภาวะเครียดจากความร้อน (heat stress) ต้องการลดอุณหภูมิ`
+    action = '🚿 ลดอุณหภูมิในคอกทันที เปิดพัดลม/สเปรย์น้ำ ให้น้ำเย็นเพิ่ม'
+    priority = 'HIGH'
+    confidence = 0.82
+  } else if (energy > 0.5 && pitch > 800 && pattern === 'repeated_short') {
+    label = 'Hunger / Feeding Request'
+    meaning = `เสียงร้องซ้ำ ๆ ระดับปานกลาง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz — สัตว์อาจหิวหรือต้องการอาหาร/น้ำ`
+    action = '🥩 ตรวจสอบตารางอาหารและน้ำ ให้อาหารเพิ่มหากจำเป็น'
+    priority = 'MEDIUM'
+    confidence = 0.76
+  } else if (energy > 0.5 && pattern === 'varied') {
+    label = 'Social / Herd Communication'
+    meaning = `เสียงร้องหลายรูปแบบ พลังงาน ${energy.toFixed(2)} — การสื่อสารปกติภายในฝูง เช่น แม่เรียกลูก หรือสื่อสารระหว่างกัน`
+    action = '✅ พฤติกรรมปกติ ไม่ต้องดำเนินการ'
+    priority = 'LOW'
+    confidence = 0.73
+  } else if (energy > 0.6 && pattern === 'single_burst') {
+    label = 'Startle / Discomfort'
+    meaning = `เสียงสั้นพลังงานสูง (${energy.toFixed(2)}) — สัตว์ตกใจหรือไม่สบาย อาจเกิดจากสิ่งรบกวนในคอก`
+    action = '🔍 ตรวจสอบสภาพแวดล้อมภายในคอก ลดเสียงรบกวน'
+    priority = 'MEDIUM'
+    confidence = 0.70
+  } else if (energy < 0.3 && pattern === 'sustained') {
+    label = 'Calm / Ruminating'
+    meaning = `เสียงเบาต่อเนื่อง (${energy.toFixed(2)}) — สัตว์อยู่ในสภาวะสงบ อาจกำลังเคี้ยวเอื้องหรือพักผ่อน`
+    action = '😊 สัตว์สุขภาพดี ผ่อนคลาย ไม่ต้องดำเนินการ'
+    priority = 'BACKGROUND'
+    confidence = 0.75
+  } else if (energy > 0.5) {
+    label = 'General Vocalization'
+    meaning = `เสียงร้องพลังงาน ${energy.toFixed(2)} ความถี่ ${pitch} Hz — ยังไม่สามารถระบุสาเหตุชัดเจน`
+    action = '📋 บันทึกและติดตามพฤติกรรมต่อเนื่อง'
+    priority = 'LOW'
+    confidence = 0.62
+  } else {
+    label = 'Quiet / Resting'
+    meaning = `เสียงพลังงานต่ำ (${energy.toFixed(2)}) — สัตว์พักผ่อนหรือไม่ได้ส่งเสียง`
     action = 'ไม่มีสัญญาณผิดปกติ'
     priority = 'BACKGROUND'
     confidence = 0.60
   }
 
-  // Adjust confidence based on spectral centroid clarity
   if (spectralCentroid > 3000) confidence = Math.min(confidence + 0.05, 0.95)
   if (peakAmplitude > 0.9) confidence = Math.min(confidence + 0.03, 0.95)
 
-  // Add use case context
-  const useCaseContextMap: Record<string, string> = {
-    wildlife: 'สัตว์',
-    livestock: 'สัตว์',
-    companion: 'สัตว์',
-  }
-  const useCaseLabel = useCaseContextMap[useCase] || useCase
+  return buildAudioResult('[สัตว์]', label, meaning, action, priority, confidence, energy, pitch, duration, pattern, spectralCentroid, peakAmplitude, data)
+}
 
+// ========= Companion: เน้น emotions (happy / sad / anxious / playful) =========
+function analyzeCompanionAudio(
+  energy: number, pitch: number, duration: number, pattern: string,
+  spectralCentroid: number, peakAmplitude: number, data: Record<string, unknown>
+): AnalysisOutput {
+  let label = '', meaning = '', action = ''
+  let priority: AnalysisOutput['priority'] = 'LOW'
+  let confidence = 0.65
+
+  if (energy > 0.7 && pitch > 1500 && pattern === 'repeated_short') {
+    label = 'Anxious / Fearful'
+    meaning = `เสียงร้องซ้ำ ๆ ถี่ ๆ ความถี่สูง ${pitch} Hz พลังงานสูง (${energy.toFixed(2)}) — สัตว์เลี้ยงอาจกลัว วิตกกังวล หรือรู้สึกไม่ปลอดภัย`
+    action = '🤗 อยู่ใกล้ ๆ ปลอบใจ ลดสิ่งเร้าที่ทำให้กลัว (เช่น เสียงดัง พายุ)'
+    priority = 'HIGH'
+    confidence = 0.83
+  } else if (energy > 0.7 && pitch > 1000 && pattern === 'varied') {
+    label = 'Happy / Excited'
+    meaning = `เสียงร้องหลากหลาย พลังงานสูง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz — สัตว์เลี้ยงดีใจ ตื่นเต้น อยากเล่น!`
+    action = '🎾 เล่นกับเขาเถอะ! มีพลังงานเหลือเฟือ เหมาะกับ fetch หรือพาไปวิ่ง'
+    priority = 'LOW'
+    confidence = 0.85
+  } else if (energy > 0.7 && pitch > 1000 && pattern === 'sustained') {
+    label = 'Lonely / Separation Anxiety'
+    meaning = `เสียงร้องยาวต่อเนื่อง พลังงานสูง (${energy.toFixed(2)}) — อาจรู้สึกเหงา ถูกทิ้งคนเดียว หรือต้องการความสนใจ`
+    action = '💛 ให้เวลาอยู่ด้วย ควรฝึกให้คุ้นเคยกับการอยู่คนเดียวทีละน้อย'
+    priority = 'MEDIUM'
+    confidence = 0.78
+  } else if (energy > 0.5 && pitch > 800 && pattern === 'repeated_short') {
+    label = 'Hungry / Needs Attention'
+    meaning = `เสียงร้องซ้ำ ๆ ปานกลาง (${energy.toFixed(2)}) ความถี่ ${pitch} Hz — สัตว์เลี้ยงอาจหิว กระหาย หรือต้องการออกไปข้างนอก`
+    action = '🍖 ตรวจสอบอาหาร น้ำ และพาออกไปเดินเล่น'
+    priority = 'LOW'
+    confidence = 0.76
+  } else if (energy > 0.6 && pattern === 'single_burst') {
+    label = 'Surprised / Alert'
+    meaning = `เสียงสั้นพลังงานสูง (${energy.toFixed(2)}) — ตกใจหรือตื่นตัว อาจเห็นหรือได้ยินอะไรแปลก ๆ`
+    action = '👀 ดูว่ามีอะไรผิดปกติรอบบ้านไหม อาจมีคนมา หรือสัตว์อื่นเข้าใกล้'
+    priority = 'LOW'
+    confidence = 0.70
+  } else if (energy < 0.3 && pattern === 'sustained') {
+    label = 'Relaxed / Purring'
+    meaning = `เสียงเบานุ่มต่อเนื่อง (${energy.toFixed(2)}) — สัตว์เลี้ยงผ่อนคลาย สบายใจ อาจกำลังง่วงหรือ purring`
+    action = '😸 อารมณ์ดี ผ่อนคลาย หลับสบาย~'
+    priority = 'BACKGROUND'
+    confidence = 0.80
+  } else if (energy > 0.4 && pitch < 500) {
+    label = 'Growling / Uncomfortable'
+    meaning = `เสียงทุ้มต่ำ ความถี่ ${pitch} Hz พลังงาน ${energy.toFixed(2)} — อาจรู้สึกไม่สบาย หงุดหงิด หรือเตือนไม่ให้เข้าใกล้`
+    action = '⚠️ ให้พื้นที่ส่วนตัว อย่าบังคับ อาจไม่สบายหรือเจ็บปวด'
+    priority = 'MEDIUM'
+    confidence = 0.72
+  } else if (energy > 0.5) {
+    label = 'Playful / Communicating'
+    meaning = `เสียงร้องพลังงาน ${energy.toFixed(2)} — สัตว์เลี้ยงกำลังสื่อสารหรืออยากเล่น`
+    action = '🐾 ลองเล่นด้วยหรือให้ของเล่น'
+    priority = 'LOW'
+    confidence = 0.65
+  } else {
+    label = 'Quiet / Sleeping'
+    meaning = `เสียงพลังงานต่ำ (${energy.toFixed(2)}) — สัตว์เลี้ยงอยู่เงียบ ๆ อาจนอนหลับหรือพักผ่อน`
+    action = '💤 ปล่อยให้พักผ่อน ไม่ต้องรบกวน'
+    priority = 'BACKGROUND'
+    confidence = 0.60
+  }
+
+  if (spectralCentroid > 3000) confidence = Math.min(confidence + 0.05, 0.95)
+  if (peakAmplitude > 0.9) confidence = Math.min(confidence + 0.03, 0.95)
+
+  return buildAudioResult('[สัตว์]', label, meaning, action, priority, confidence, energy, pitch, duration, pattern, spectralCentroid, peakAmplitude, data)
+}
+
+// ========= Shared result builder =========
+function buildAudioResult(
+  prefix: string, label: string, meaning: string, action: string,
+  priority: AnalysisOutput['priority'], confidence: number,
+  energy: number, pitch: number, duration: number, pattern: string,
+  spectralCentroid: number, peakAmplitude: number, data: Record<string, unknown>
+): AnalysisOutput {
   return {
-    meaning: `[${useCaseLabel}] ${meaning}`,
+    meaning: `${prefix} ${meaning}`,
     label,
     confidence,
     action,

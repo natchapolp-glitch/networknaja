@@ -147,6 +147,7 @@ export default function SimulatorPage() {
           {/* Left Column */}
           <div className="space-y-6">
             <FileUpload
+              key={activeTab}
               useCase={activeTab}
               onFileLoaded={analyzeWithBackend}
               onSampleLoad={loadSampleData}
